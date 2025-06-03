@@ -1,3 +1,4 @@
+require('dotenv').config();
 const multer = require('multer');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -5,6 +6,8 @@ const nodemailer = require('nodemailer');
 const sqlite3 = require('sqlite3').verbose();
 const { promisify } = require('util');
 const bcrypt = require('bcrypt');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 
 // Create upload directories if not exist
 if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
@@ -248,56 +251,6 @@ app.post(
     );
   }
 );
-
-// // Add Book Page
-
-// app.get('/add-book', isLoggedIn, isAdmin, (req, res) => {
-//   db.all('SELECT id, name FROM sections', (err, sections) => {
-//     if (err) {
-//       res.render('add_book', { error: 'Failed to load sections.', sections: [] });
-//     } else {
-//       res.render('add_book', { error: null, sections });
-//     }
-//   });
-// });
-
-
-// // Handle Add Book
-// app.post(
-//   '/add-book',
-//   isLoggedIn,
-//   isAdmin,
-//   upload.fields([
-//     { name: 'pdf', maxCount: 1 },
-//     { name: 'thumbnail', maxCount: 1 }
-//   ]),
-//   (req, res) => {
-//     const { title, author, section_id } = req.body;
-//     const pdf = req.files['pdf'] ? req.files['pdf'][0].filename : null;
-//     const thumbnail = req.files['thumbnail'] ? req.files['thumbnail'][0].filename : null;
-
-//     if (!pdf || !thumbnail) {
-//       return res.render('add_book', { error: 'Both PDF and thumbnail are required.', sections: [] });
-//     }
-
-//     db.run(
-//       'INSERT INTO books (title, author, pdf, thumbnail, section_id) VALUES (?, ?, ?, ?, ?)',
-//       [title, author, pdf, thumbnail, section_id || null],
-//       function (err) {
-//         if (err) {
-//           db.all('SELECT id, name FROM sections', (error, sections) => {
-//             res.render('add_book', {
-//               error: 'Error adding book.',
-//               sections: sections || []
-//             });
-//           });
-//         } else {
-//           res.redirect('/admin');
-//         }
-//       }
-//     );
-//   }
-// );
 
 
 // Edit BOOK
@@ -642,6 +595,47 @@ app.post('/subscribe', isLoggedIn, (req, res) => {
 
 // BUY SUBSCRIPTION
 
+
+app.post('/create-checkout-session', isLoggedIn, async (req, res) => {
+  const plan = req.body.plan;
+  const plans = {
+  basic: { name: 'Basic', price: 49900 },   // ₹499
+  pro: { name: 'Pro', price: 99900 },       // ₹999
+  mega: { name: 'Mega', price: 149900 }     // ₹1499
+};
+
+
+  if (!plans[plan]) return res.status(400).send('Invalid plan');
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'payment',
+    line_items: [
+      {
+        price_data: {
+          currency: 'inr',
+          product_data: {
+            name: `${plans[plan].name} Subscription Plan`
+          },
+          unit_amount: plans[plan].price,
+        },
+        quantity: 1,
+      }
+    ],
+    success_url: `${req.protocol}://${req.get('host')}/subscription-success?plan=${plan}`,
+    cancel_url: `${req.protocol}://${req.get('host')}/pay-subscription?plan=${plan}`,
+    metadata: {
+      userId: req.session.user.id
+    }
+  });
+
+  res.redirect(303, session.url);
+});
+
+
+
+
+
 app.get('/pay-subscription', isLoggedIn, (req, res) => {
   const plan = req.query.plan;
   const plans = {
@@ -658,6 +652,43 @@ app.get('/pay-subscription', isLoggedIn, (req, res) => {
     planName: plans[plan].name
   });
 });
+
+
+app.get('/subscription-success', isLoggedIn, (req, res) => {
+  const plan = req.query.plan;
+  const planDurations = { basic: 1, pro: 1, mega: 1 };
+
+  if (!planDurations[plan]) return res.status(400).send('Invalid plan');
+
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + planDurations[plan]);
+
+  db.run(
+    `UPDATE users SET 
+      subscription_plan = ?, 
+      subscription_end = ?, 
+      monthly_books_read = 0 
+    WHERE id = ?`,
+    [plan, endDate.toISOString(), req.session.user.id],
+    (err) => {
+      if (err) return res.status(500).send('Subscription update failed.');
+
+      db.get('SELECT * FROM users WHERE id = ?', [req.session.user.id], (err, updatedUser) => {
+        req.session.user = updatedUser;
+        res.locals.user = updatedUser;
+        req.session.save(() => {
+          res.render('pay_success', { plan });
+        });
+      });
+    }
+  );
+});
+
+
+
+
+// Delete below
+
 
 app.post('/process-subscription', isLoggedIn, (req, res) => {
   const plan = req.body.plan;
@@ -696,7 +727,7 @@ app.post('/process-subscription', isLoggedIn, (req, res) => {
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 // const nodemailer = require('nodemailer');
-require('dotenv').config();
+
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -707,13 +738,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   }
 });
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//     user: 'digitallibrary1100@gmail.com',
-//     pass: 'icqodiemfdulwfal', // App Password generated above
-//   },
-// });
 
 
 app.get('/forgot-password', (req, res) => {
@@ -836,7 +860,7 @@ app.get('/logout', (req, res) => {
 });
 
 // In server.js
-const stripe = require('stripe')('your_stripe_key');
+// const stripe = require('stripe')('your_stripe_key');
 
 app.post('/subscribe', isLoggedIn, async (req, res) => {
   const { plan } = req.body;
