@@ -102,15 +102,6 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-// Home redirect
-// app.get('/', (req, res) => res.redirect('/login'));
-// app.get('/', (req, res) => {
-//   if (req.session && req.session.user) {
-//     res.redirect('/dashboard');
-//   } else {
-//     res.redirect('/login');
-//   }
-// });
 
 
 app.get('/', (req, res) => {
@@ -158,16 +149,6 @@ app.get('/books', (req, res) => {
     res.render('books', { books });
   });
 });
-// admin_dashboard
-// app.get('/admin', isLoggedIn, isAdmin, (req, res) => {
-//   db.all('SELECT * FROM books', (err, books) => {
-//     if (err) return res.status(500).send('Database error');
-//     db.all('SELECT * FROM users', (err2, users) => {
-//       if (err2) return res.status(500).send('Database error');
-//       res.render('admin_dashboard', { books, users });
-//     });
-//   });
-// });
 
 app.get('/admin', isLoggedIn, isAdmin, (req, res) => {
   const bookQuery = `
