@@ -23,16 +23,18 @@ A simple and efficient digital library web application built with Node.js, Expre
 ---
 
 ## 📦 Project Structure
-Digital-Library/
+```      
+Digital-Library/  
 │
-├── public/ # Static assets (CSS, images)
-├── uploads/ # Uploaded book files
-├── views/ # EJS templates
-├── db.js # SQLite database connection
-├── library.db # SQLite database file
-├── server.js # Main server file
+├── public/      # Static assets (CSS, images)
+├── uploads/     # Uploaded book files
+├── views/       # EJS templates
+├── db.js        # SQLite database connection
+├── library.db   # SQLite database file
+├── server.js    # Main server file
 ├── package.json # Project metadata and dependencies
 └── .gitignore
+```
 
 ---
 
