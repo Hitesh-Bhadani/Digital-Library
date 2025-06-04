@@ -9,7 +9,7 @@
   <% } %>
 
   <% sections.forEach(section => { %>
-    <% if (section.books.length ==! 0) { %>
+    <% if (section.books.length) { %>
     <div class="section-block mb-5">
       <h3 class="section-title"><%= section.name %></h3>
       <% if (section.description) { %>

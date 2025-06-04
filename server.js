@@ -159,15 +159,34 @@ app.get('/books', (req, res) => {
   });
 });
 // admin_dashboard
+// app.get('/admin', isLoggedIn, isAdmin, (req, res) => {
+//   db.all('SELECT * FROM books', (err, books) => {
+//     if (err) return res.status(500).send('Database error');
+//     db.all('SELECT * FROM users', (err2, users) => {
+//       if (err2) return res.status(500).send('Database error');
+//       res.render('admin_dashboard', { books, users });
+//     });
+//   });
+// });
+
 app.get('/admin', isLoggedIn, isAdmin, (req, res) => {
-  db.all('SELECT * FROM books', (err, books) => {
+  const bookQuery = `
+    SELECT books.*, sections.name AS section_name
+    FROM books
+    JOIN sections ON books.section_id = sections.id
+  `;
+
+  db.all(bookQuery, (err, books) => {
     if (err) return res.status(500).send('Database error');
+    
     db.all('SELECT * FROM users', (err2, users) => {
       if (err2) return res.status(500).send('Database error');
+      
       res.render('admin_dashboard', { books, users });
     });
   });
 });
+
 
 // Add Section Page
 app.get('/add-section', isLoggedIn, isAdmin, (req, res) => {
