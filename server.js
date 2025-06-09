@@ -888,3 +888,9 @@ app.post('/subscribe', isLoggedIn, async (req, res) => {
 
 
 module.exports = app;
+
+
+
+app.get("/test", (req, res) => {
+  res.send("If you see this, Express is working.");
+});
