@@ -106,8 +106,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
   // Step 1: Check login
-  res.render("index", { message: "Welcome to Digital Library!" });
-
   if (req.session && req.session.user) {
     return res.redirect('/dashboard'); // original behavior preserved
   }
@@ -890,9 +888,3 @@ app.post('/subscribe', isLoggedIn, async (req, res) => {
 
 
 module.exports = app;
-
-
-
-app.get("/test", (req, res) => {
-  res.send("If you see this, Express is working.");
-});
