@@ -1,4 +1,10 @@
-const serverless = require('serverless-http');
-const app = require('../server'); // assuming server.js is one level up
+const express = require('express');
+const app = express();
 
-module.exports = serverless(app);
+// your routes here
+app.get('/', (req, res) => {
+  res.send("Hello from Express");
+});
+
+module.exports = app;
+
