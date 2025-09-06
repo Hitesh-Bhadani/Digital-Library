@@ -1,7 +1,7 @@
 {
   "name": "library",
   "version": "1.0.0",
-  "description": "Library management system",
+  "description": "Digital Library",
   "main": "server.js",
   "type": "module",
   "scripts": {
